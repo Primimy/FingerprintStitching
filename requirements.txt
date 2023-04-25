@@ -1,0 +1,6 @@
+matplotlib
+PySide6
+numpy
+opencv-python
+qt_material
+pipenv
