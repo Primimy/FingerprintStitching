@@ -2,5 +2,6 @@ matplotlib
 PySide6
 numpy
 opencv-python
+stitching
 qt_material
 pipenv

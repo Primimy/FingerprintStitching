@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 from qt_material import apply_stylesheet
 
 from window_ui import Ui_MainWindow
-from works import Stitcher
+from works import Stitching
 
 
 class Main(QMainWindow, Ui_MainWindow):
@@ -117,7 +117,7 @@ class Main(QMainWindow, Ui_MainWindow):
         results = []
         from PySide6.QtGui import QImage
 
-        s = Stitcher(self.infos, self.imagePaths)
+        s = Stitching(self.infos, self.imagePaths)
         s.run()
         output = s.output()
         for image in output:
@@ -153,5 +153,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     window = Main()
+    apply_stylesheet(app, theme='light_purple.xml')
     window.show()
     sys.exit(app.exec())

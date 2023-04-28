@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-class Stitcher:
+class Stitching:
     images, imagePaths = [], []
     infos = []
     results = []
@@ -187,7 +187,6 @@ class Stitcher:
             self.Hs.append(H)
             self.masks.append(mask)
 
-
     def filter(self, image, show=False):
         ksize = 15
         sigma = 3
@@ -223,12 +222,12 @@ class Stitcher:
             H = self.Hs[i]
             mask = self.masks[i]
             height, width, channels = self.images[i + 1].shape
-            imageProcessed = cv2.warpPerspective(self.images[i], H, (width, height))
+            imageProcessed = cv2.warpPerspective(self.images[i + 1], H, (width, height))
             imageProcessed = cv2.addWeighted(
                 imageProcessed, 0.5, self.images[i + 1], 0.5, 0
             )
-            self.results.append(imageProcessed)
             temp.append(imageProcessed)
+            temp[i] = (__import__('stitching').Stitcher().stitch([self.imagePaths[i], self.imagePaths[i + 1]]))
 
         kp1, des1 = cv2.SIFT_create().detectAndCompute(temp[0], None)
         kp2, des2 = cv2.SIFT_create().detectAndCompute(temp[1], None)
@@ -241,10 +240,65 @@ class Stitcher:
             cv2.RANSAC,
             float(self.infos[2]),
         )
-        temp[0] = cv2.warpPerspective(temp[0], H, (temp[1].shape[1], temp[1].shape[0]))
-        output = cv2.addWeighted(temp[0], 0.5, temp[1], 0.5, 0)
-        self.results.append(output)
+        warped = cv2.warpPerspective(
+            temp[1], H, (temp[0].shape[1] + temp[1].shape[1], temp[0].shape[0])
+        )
+        self.results.append(temp[0])
+        self.results.append(temp[1])
+        self.results.append(
+            __import__('stitching').Stitcher().stitch([self.imagePaths[0], self.imagePaths[1], self.imagePaths[2]])
+        )
 
+    def _stitcher(self):
+        temp = []
+        for i in range(len(self.images) - 1):
+            H = self.Hs[i]
+            mask = self.masks[i]
+            # height, width, channels = self.images[i + 1].shape
+            imageProcessed = cv2.warpPerspective(
+                self.images[i],
+                H,
+                (
+                    self.images[i].shape[1] + self.images[i + 1].shape[1],
+                    self.images[i].shape[0],
+                ),
+            )
+            # overlap = abs(self.images[i].shape[1] - imageProcessed.shape[1])
+            # alpha = np.linspace(0, 1, overlap)
+            # mask = np.concatenate(
+            #     [
+            #         np.zeros(self.images[i].shape[1] - overlap),
+            #         alpha,
+            #         np.ones(imageProcessed.shape[1]),
+            #     ]
+            # )
+            # result = self.images[i].shape[1] * mask + imageProcessed * (1 - mask)
+            imageProcessed[
+                0 : self.images[i + 1].shape[0], 0 : self.images[i + 1].shape[1]
+            ] = self.images[i + 1]
+            temp.append(imageProcessed)
+            self.results.append(imageProcessed)
+
+        # temp[1] = self.images[2]
+        kp1, des1 = cv2.SIFT_create().detectAndCompute(temp[0], None)
+        kp2, des2 = cv2.SIFT_create().detectAndCompute(temp[1], None)
+        matches = cv2.FlannBasedMatcher().knnMatch(des1, des2, k=2)
+        good_matches = [m for m, n in matches if m.distance < 0.75 * n.distance]
+
+        H, mask = cv2.findHomography(
+            np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2),  # type: ignore
+            np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2),  # type: ignore
+            cv2.RANSAC,
+            float(self.infos[2]),
+        )
+        warped = cv2.warpPerspective(
+            temp[0], H, (temp[0].shape[1] + temp[1].shape[1], temp[1].shape[0])
+        )
+        # output = cv2.addWeighted(temp[0], 0.5, temp[1], 0.5, 0)
+        # warped[0 : temp[1].shape[0], 0 : temp[1].shape[1]] = temp[1]
+
+        self.results.append(warped)
+        # self.results.append(output)
 
     def readImages(self):
         for path in self.imagePaths:
@@ -254,8 +308,7 @@ class Stitcher:
     def writeImages(self, path):
         if os.path.exists(path):
             shutil.rmtree(path)
-        else:
-            os.mkdir(path)
+        os.mkdir(path)
         for i in range(len(self.results)):
             cv2.imwrite(path + '/' + str(i) + '.jpg', self.results[i])
 
@@ -266,18 +319,17 @@ class Stitcher:
         self.findFeatures()
         self.matchFeatures()
         self.stitch()
+        # self._stitcher()
         if self.infos[6]:
             self.writeImages('results')
 
 
-
 if __name__ == '__main__':
-    s = Stitcher(
-        ['sift', 'ransac', '7.0', False, False, '', False],
-        ['images/a1.jpg', 'images/a2.jpg', 'images/a3.jpg'],
+    s = Stitching(
+        ['sift', 'ransac', '7.0', False, False, '', True],
+        ['images/a1.jpg', 'images/a2.jpg', 'images/a3.jpg']
+        # ['images/weir_1.jpg', 'images/weir_2.jpg', 'images/weir_3.jpg']
+        # ['images/t2/1.jpg', 'images/t2/2.jpg', 'images/t2/3.jpg'],
     )
-    s.findFeatures()
-    s.matchFeatures()
-    s.stitch()
-    s.writeImages('results')
+    s.run()
     exit()

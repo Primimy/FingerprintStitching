@@ -132,6 +132,9 @@ dmypy.json
 *.png
 *.jpg
 
+# nuiska files
+o/
+report.xml
 
 Pipfile.lock
 Pipfile
