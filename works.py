@@ -14,6 +14,7 @@ class Stitching:
     results = []
     kps, des = [], []
     Hs, masks = [], []
+    fail = False
 
     def __init__(self, infos, imagePaths):
         self.images, self.imagePaths = [], []
@@ -23,6 +24,7 @@ class Stitching:
         self.Hs, self.masks = [], []
         self.infos = infos
         self.imagePaths = imagePaths
+        self.fail = False
 
         self.readImages()
 
@@ -227,7 +229,11 @@ class Stitching:
                 imageProcessed, 0.5, self.images[i + 1], 0.5, 0
             )
             temp.append(imageProcessed)
-            temp[i] = (__import__('stitching').Stitcher().stitch([self.imagePaths[i], self.imagePaths[i + 1]]))
+            try:
+                temp[i] = (__import__('stitching').Stitcher().stitch([self.imagePaths[i], self.imagePaths[i + 1]]))
+                self.results.append(temp[i])
+            except:
+                self.fail = True
 
         kp1, des1 = cv2.SIFT_create().detectAndCompute(temp[0], None)
         kp2, des2 = cv2.SIFT_create().detectAndCompute(temp[1], None)
@@ -243,8 +249,6 @@ class Stitching:
         warped = cv2.warpPerspective(
             temp[1], H, (temp[0].shape[1] + temp[1].shape[1], temp[0].shape[0])
         )
-        self.results.append(temp[0])
-        self.results.append(temp[1])
         self.results.append(
             __import__('stitching').Stitcher().stitch([self.imagePaths[0], self.imagePaths[1], self.imagePaths[2]])
         )
@@ -313,7 +317,7 @@ class Stitching:
             cv2.imwrite(path + '/' + str(i) + '.jpg', self.results[i])
 
     def output(self):
-        return self.results
+        return self.results,self.fail
 
     def run(self):
         self.findFeatures()

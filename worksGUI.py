@@ -59,6 +59,7 @@ class Main(QMainWindow, Ui_MainWindow):
                 pixmap.scaled(
                     self.ui.label_read1.size(),
                     aspectMode=Qt.AspectRatioMode.KeepAspectRatio,
+                    mode=Qt.TransformationMode.SmoothTransformation,
                 )
             )
             self.imagePaths[0] = file_path
@@ -67,6 +68,7 @@ class Main(QMainWindow, Ui_MainWindow):
                 pixmap.scaled(
                     self.ui.label_read2.size(),
                     aspectMode=Qt.AspectRatioMode.KeepAspectRatio,
+                    mode=Qt.TransformationMode.SmoothTransformation,
                 )
             )
             self.imagePaths[1] = file_path
@@ -75,6 +77,7 @@ class Main(QMainWindow, Ui_MainWindow):
                 pixmap.scaled(
                     self.ui.label_read3.size(),
                     aspectMode=Qt.AspectRatioMode.KeepAspectRatio,
+                    mode=Qt.TransformationMode.SmoothTransformation,
                 )
             )
             self.imagePaths[2] = file_path
@@ -113,46 +116,55 @@ class Main(QMainWindow, Ui_MainWindow):
         self.infos[2] = threshold
 
     def stitch(self):
-        imagePaths = ['', '', '']
-        results = []
+        self._reset()
         from PySide6.QtGui import QImage
 
         s = Stitching(self.infos, self.imagePaths)
         s.run()
-        output = s.output()
-        for image in output:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            qimg = QImage(
-                image.data,
-                image.shape[1],
-                image.shape[0],
-                image.shape[1] * 3,
-                QImage.Format_RGB888,  # type: ignore
+        output,fail = s.output()
+        self.ui.label.clear()
+        if fail:
+            self.ui.label_title.setText('特征点匹配过少，拼接失败')
+        else:
+            for image in output:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                qimg = QImage(
+                    image.data,
+                    image.shape[1],
+                    image.shape[0],
+                    image.shape[1] * 3,
+                    QImage.Format_RGB888,  # type: ignore
+                )
+                self.results.append(QPixmap(qimg))
+            self.ui.label.setPixmap(
+                self.results[0].scaled(
+                    self.ui.label.size(),
+                    aspectMode=Qt.AspectRatioMode.KeepAspectRatio,
+                )
             )
-            self.results.append(QPixmap(qimg))
-        self.ui.label.setPixmap(
-            self.results[0].scaled(
-                self.ui.label.size(),
-                aspectMode=Qt.AspectRatioMode.KeepAspectRatio,
-            )
-        )
-        self.ui.label_title.setText(self.titleString[0])
-        self.ui.horizontalSlider.setMaximum(len(self.results) - 1)
+            self.ui.label_title.setText(self.titleString[0])
+            self.ui.horizontalSlider.setMaximum(len(self.results) - 1)
 
     def changeContent(self, value):
         self.ui.label.setPixmap(
             self.results[value].scaled(
                 self.ui.label.size(),
                 aspectMode=Qt.AspectRatioMode.KeepAspectRatio,
+                mode=Qt.TransformationMode.SmoothTransformation,
             )
         )
         self.ui.label_title.setText(self.titleString[value])
+
+    def _reset(self):
+        self.results = []
+        self.ui.label_title.setText('')
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     window = Main()
+    window.setWindowTitle('Fingerprint Stitching Demo')
     apply_stylesheet(app, theme='light_purple.xml')
     window.show()
     sys.exit(app.exec())
