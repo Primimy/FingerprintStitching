@@ -14,6 +14,7 @@ class Stitching:
     results = []
     kps, des = [], []
     Hs, masks = [], []
+    # inlierCounts, outlierCounts, stdErrs = [], [], []
     fail = False
 
     def __init__(self, infos, imagePaths):
@@ -22,32 +23,21 @@ class Stitching:
         self.results = []
         self.kps, self.des = [], []
         self.Hs, self.masks = [], []
+        # self.inlierCounts, self.outlierCounts, self.stdErrs = [], [], []
         self.infos = infos
         self.imagePaths = imagePaths
         self.fail = False
 
         self.readImages()
 
-    # def histogramEqualization(self):
-    #     for i in range(len(self.images)):
-    #         lab = cv2.cvtColor(self.images[i], cv2.COLOR_BGR2LAB)
-    #         l, a, b = cv2.split(lab)
-    #         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    #         cl = clahe.apply(l)
-    #         clahe_l = cv2.merge((cl, a, b))
-    #         self.images[i] = cv2.cvtColor(clahe_l, cv2.COLOR_LAB2BGR)
-
-    #     matplotlib.rcParams['font.family'] = 'Microsoft YaHei'
-    #     figure = plt.figure(figsize=(10, 9))
-    #     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-    #     canvas = FigureCanvasQTAgg(figure)
-
-    #     for i in range(len(self.images)):
-    #         plt.subplot(1, len(self.images), i + 1)
-    #         plt.imshow(cv2.cvtColor(self.images[i], cv2.COLOR_BGR2RGB))
-    #         plt.title('Histogram Equalization/直方图均衡化')
-    #     canvas.draw()
-    #     self.results.append(canvas)
+    def histogramEqualization(self):
+        for i in range(len(self.images)):
+            lab = cv2.cvtColor(self.images[i], cv2.COLOR_BGR2LAB)
+            l, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            cl = clahe.apply(l)
+            clahe_l = cv2.merge((cl, a, b))
+            self.images[i] = cv2.cvtColor(clahe_l, cv2.COLOR_LAB2BGR)
 
     def findFeatures(self):
         method = self.infos[0]
@@ -77,34 +67,34 @@ class Stitching:
             endPerf = time.perf_counter()
 
             image = cv2.drawKeypoints(
-                image, keypoints, None, flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT
+                image, keypoints, None, flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT,color=(0, 255, 0)
             )
             image = cv2.putText(
                 image,
                 'method: ' + method,
-                (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 0, 255),
+                (10, 60),
+                cv2.FONT_HERSHEY_DUPLEX,
                 2,
+                (0, 0, 255),
+                3,
             )
             image = cv2.putText(
                 image,
                 'features: ' + str(len(keypoints)),
-                (10, 60),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 0, 255),
+                (10, 120),
+                cv2.FONT_HERSHEY_DUPLEX,
                 2,
+                (0, 0, 255),
+                3,
             )
             image = cv2.putText(
                 image,
                 'time: ' + str('{:.2f}'.format((endPerf - startPerf) * 1000)) + 'ms',
-                (10, 90),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 0, 255),
+                (10, 180),
+                cv2.FONT_HERSHEY_DUPLEX,
                 2,
+                (0, 0, 255),
+                3,
             )
             self.results.append(image)
             self.kps.append(keypoints)
@@ -127,17 +117,20 @@ class Stitching:
             backproj_err = np.sqrt(np.sum((dst - pts2) ** 2, axis=2)).ravel()
             mean_err = np.mean(backproj_err)
             std_err = np.std(backproj_err)
+            # self.stdErrs.append(std_err)
             inliers = [
                 matches[i] for i in range(len(matchesMask)) if matchesMask[i] == 1
             ]
+            # self.inlierCounts.append(len(inliers))
             outliers = [
                 matches[i] for i in range(len(matchesMask)) if matchesMask[i] == 0
             ]
+            # self.outlierCounts.append(len(outliers))
             draw_params = dict(
                 matchColor=(0, 255, 0),
-                singlePointColor=(255, 0, 0),
+                singlePointColor=(0, 0, 255),
                 matchesMask=matchesMask,
-                flags=cv2.DrawMatchesFlags_DEFAULT,
+                flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
             )
             image = cv2.drawMatches(
                 self.images[i],
@@ -151,39 +144,39 @@ class Stitching:
             image = cv2.putText(
                 image,
                 'method: ' + self.infos[0] + ' threshold: ' + str(self.infos[2]),
-                (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 0, 255),
+                (10, 60),
+                cv2.FONT_HERSHEY_DUPLEX,
                 2,
+                (0, 0, 255),
+                3,
             )
             image = cv2.putText(
                 image,
                 'inliers: ' + str(len(inliers)) + 'outliers: ' + str(len(outliers)),
-                (10, 60),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 0, 255),
+                (10, 120),
+                cv2.FONT_HERSHEY_DUPLEX,
                 2,
+                (0, 0, 255),
+                3,
             )
             image = cv2.putText(
                 image,
                 'accuracy: '
                 + str('{:.2%}'.format(len(inliers) / (len(inliers) + len(outliers)))),
-                (10, 120),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 0, 255),
+                (10, 180),
+                cv2.FONT_HERSHEY_DUPLEX,
                 2,
+                (0, 0, 255),
+                3,
             )
             image = cv2.putText(
                 image,
                 'avgError: ' + str(mean_err) + ' stdError: ' + str(std_err),
-                (10, 150),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 0, 255),
+                (10, 240),
+                cv2.FONT_HERSHEY_DUPLEX,
                 2,
+                (0, 0, 255),
+                3,
             )
             self.results.append(image)
             self.Hs.append(H)
@@ -230,7 +223,11 @@ class Stitching:
             )
             temp.append(imageProcessed)
             try:
-                temp[i] = (__import__('stitching').Stitcher().stitch([self.imagePaths[i], self.imagePaths[i + 1]]))
+                temp[i] = (
+                    __import__('stitching')
+                    .Stitcher()
+                    .stitch([self.imagePaths[i], self.imagePaths[i + 1]])
+                )
                 self.results.append(temp[i])
             except:
                 self.fail = True
@@ -250,7 +247,9 @@ class Stitching:
             temp[1], H, (temp[0].shape[1] + temp[1].shape[1], temp[0].shape[0])
         )
         self.results.append(
-            __import__('stitching').Stitcher().stitch([self.imagePaths[0], self.imagePaths[1], self.imagePaths[2]])
+            __import__('stitching')
+            .Stitcher()
+            .stitch([self.imagePaths[0], self.imagePaths[1], self.imagePaths[2]])
         )
 
     def _stitcher(self):
@@ -317,9 +316,10 @@ class Stitching:
             cv2.imwrite(path + '/' + str(i) + '.jpg', self.results[i])
 
     def output(self):
-        return self.results,self.fail
+        return self.results, self.fail
 
     def run(self):
+        self.histogramEqualization()
         self.findFeatures()
         self.matchFeatures()
         self.stitch()

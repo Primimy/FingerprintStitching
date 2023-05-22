@@ -1,0 +1,5 @@
+digraph "classes" {
+rankdir=BT
+charset="utf-8"
+"works.Stitching" [color="black", fontcolor="black", label=<{Stitching|Hs : list<br ALIGN="LEFT"/>Hs : list<br ALIGN="LEFT"/>des : list<br ALIGN="LEFT"/>des : list<br ALIGN="LEFT"/>fail : bool<br ALIGN="LEFT"/>fail : bool<br ALIGN="LEFT"/>imagePaths : list<br ALIGN="LEFT"/>imagePaths : list<br ALIGN="LEFT"/>images : list<br ALIGN="LEFT"/>images : list<br ALIGN="LEFT"/>infos : list<br ALIGN="LEFT"/>infos : list<br ALIGN="LEFT"/>kps : list<br ALIGN="LEFT"/>kps : list<br ALIGN="LEFT"/>masks : list<br ALIGN="LEFT"/>masks : list<br ALIGN="LEFT"/>results : list<br ALIGN="LEFT"/>results : list<br ALIGN="LEFT"/>|filter(image, show)<br ALIGN="LEFT"/>findFeatures()<br ALIGN="LEFT"/>histogramEqualization()<br ALIGN="LEFT"/>matchFeatures()<br ALIGN="LEFT"/>output()<br ALIGN="LEFT"/>readImages()<br ALIGN="LEFT"/>run()<br ALIGN="LEFT"/>stitch()<br ALIGN="LEFT"/>writeImages(path)<br ALIGN="LEFT"/>}>, shape="record", style="solid"];
+}
