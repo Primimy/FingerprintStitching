@@ -303,6 +303,22 @@ class Stitching:
         self.results.append(warped)
         # self.results.append(output)
 
+    def smoothEdge(self):
+        for image in self.images:
+            image = image.astype(np.float32) / 255.0
+            smoothed = cv2.GaussianBlur(image, (0, 0), 2.0)
+            result = (smoothed * 255).astype(np.uint8)
+            self.results.append(smoothed)
+
+    def removeGhosting(self, mask, alpha=0.5):
+        image1 = self.images[0].astype(np.float32) / 255.0
+        image2 = self.images[1].astype(np.float32) / 255.0
+        mask = mask.astype(np.float32) / 255.0
+        result = cv2.addWeighted(image1, alpha, image2, 1 - alpha, 0)
+        result = result * (1 - mask) + image2 * mask
+        result = (result * 255).astype(np.uint8)
+        return result
+
     def readImages(self):
         for path in self.imagePaths:
             if os.path.exists(path):
